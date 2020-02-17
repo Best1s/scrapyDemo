@@ -12,14 +12,17 @@ import requests
 
 from scrapy.exceptions import IgnoreRequest
 from twisted.internet.error import TimeoutError
+from twisted.internet.defer import DeferredLock
 
 
 class Proxy(object):
+    url = "http://47.106.254.210/"
+    headers = {'Authorization': 'Basic cHJveHk6cHJveHkxMjMh'}
     def get_proxy(self):
-        return requests.get("http://127.0.0.1:5010/get/").json()
+        return requests.get(self.url + "get/", headers = self.headers).json()
 
     def delete_proxy(self,proxy):
-        requests.get("http://127.0.0.1:5010/delete/?proxy={}".format(proxy))
+        requests.get(self.url + "delete/?proxy={}".format(proxy), headers = self.headers)
 
     # your spider code
 
@@ -143,15 +146,22 @@ class DemoDownloaderMiddleware(object):
         "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0; Avant Browser; Avant Browser; .NET CLR 2.0.50727)",
         "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT; Avant Browser; Avant Browser; .NET CLR 1.1.4322; .NET CLR 2.0.50727; InfoPath.2)",
     ]
-    cookies = "_lxsdk_s=1704e016e85-010-3da-05d%7C%7C1"
-    cookies = {i.split("=")[0]:i.split("=")[1] for i in cookies.split("; ")}
-    #cookies['_hc.v'] = cookies['_hc.v'].split('.')[0] + "." +  str(time.time()).split(".")[0]
-
+    
+    lock = DeferredLock()
     user_agent = random.choice(USER_AGENTS)
 
     p = Proxy()
-    proxy_ip = p.get_proxy()['proxy']
+    proxy_ip = p.get_proxy().get("proxy")
     
+    def get_cookies(self):
+        self.lock.acquire()
+        cookies = input("请输入浏览器中的cookies:")
+        #cookies = "cy=4; cityid=4; cye=guangzhou; _lxsdk_cuid=170514ff1bdc8-063a3198386eb1-54123310-1fa400-170514ff1bdc8; _lxsdk=170514ff1bdc8-063a3198386eb1-54123310-1fa400-170514ff1bdc8; _hc.v=b958987a-6757-2809-fa15-d13116dc1f45.1581912159; s_ViewType=10; _lxsdk_s=17051e7d852-bfb-b01-a92%7C%7C36"
+        if not cookies:
+            cookies = input("请输入浏览器中的cookies:")
+        cookies = {i.split("=")[0]:i.split("=")[1] for i in cookies.split("; ")}
+        self.lock.release()
+        return cookies
 
 
 
@@ -181,20 +191,24 @@ class DemoDownloaderMiddleware(object):
         # - 如果其raise一个 IgnoreRequest 异常，则安装的下载中间件的 process_exception() 方法会被调用。
         #   如果没有任何一个方法处理该异常， 则request的errback(Request.errback)方法会被调用。如果没有代码处理抛出的异常， 则该异常被忽略且不记录(不同于其他异常那样)。
         
-        
-        
+        #if not request.cookies:
+        #    print("set cookies :")
+        #    request.cookies = self.get_cookies
+            
+        if  "proxy" not in request.meta or not request.meta["proxy"]:
+            proxy_ip = self.proxy_ip
+            request.meta['proxy'] = "http://" + proxy_ip
+            request.headers["User-agent"] = self.user_agent            
+            print("*********************************************proxxy_ip is:",proxy_ip)
 
-        
-        if 'proxy' not in request.meta:
-            request.meta['proxy'] = "http://" + self.proxy_ip
-            request.headers["User-agent"] = self.user_agent
-            print("*********************************************proxxy_ip is:",self.proxy_ip)
-         
-        request.cookies = self.cookies
+        if not request.cookies:
+            request.cookies = {'cy': '4', 'cityid': '4', 'cye': 'guangzhou', '_lxsdk_cuid': '17052864021c8-0ddc1478b801a8-54123310-1fa400-17052864021c8', '_lxsdk': '17052864021c8-0ddc1478b801a8-54123310-1fa400-17052864021c8', '_hc.v': 'e8a58956-8ea5-ddd9-2c2e-c5216c3dc9a6.1581932495', 's_ViewType': '10', '_lxsdk_s': '17052863dbd-619-26-3a6%7C%7C87'}
+            print("request.cookies is",request.cookies)
+            
 
         if request.url.split("/")[2] == "verify.meituan.com":
-            raise IgnoreRequest('url filter is verify.meituan.com')
-            
+            print("*********************************************url is: verify.meituan.com")
+            raise IgnoreRequest('url filter is verify.meituan.com')            
 
         return None
 
@@ -215,11 +229,15 @@ class DemoDownloaderMiddleware(object):
         print("这是一个rsponse")
 
         if response.status != 200 :
-            print("page url is:",response.url,"status:",response.status,"proxy_ip is:",self.proxy_ip)
-            self.p.delete_proxy(self.proxy_ip)
+            proxy_ip = response.meta['proxy']
+            print("page url is:",response.url,"status:",response.status,"proxy_ip is:", proxy_ip)
+            request.cookies = self.get_cookies()
             request.headers["User-agent"] = self.user_agent
-            request.meta['proxy'] = "http://" + self.proxy_ip
-            return request            
+            proxy_ip = self.proxy_ip
+            request.meta['proxy'] = "http://" + proxy_ip
+            print("new proxy_ip is:",proxy_ip)
+            return request
+        
         
         return response
 
@@ -231,11 +249,11 @@ class DemoDownloaderMiddleware(object):
         # - return None: continue processing this exception
         # - return a Response object: stops process_exception() chain
         # - return a Request object: stops process_exception() chain
-
-        if isinstance(exception,TimeoutError):
-            request.meta['proxy'] = "http://" + self.proxy_ip
-            request.headers["User-agent"] = self.user_agent
+        if isinstance(exception, TimeoutError):
+            self.p.delete_proxy(response.meta['proxy'])
+            request.meta['proxy'] = ""
             return request
+        #return request
         
 
     def spider_opened(self, spider):

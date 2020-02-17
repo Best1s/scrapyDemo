@@ -34,7 +34,7 @@ CONCURRENT_REQUESTS = 16
 #CONCURRENT_REQUESTS_PER_IP = 16
 
 # Disable cookies (enabled by default)
-COOKIES_ENABLED = True
+COOKIES_ENABLED = False
 
 # Disable Telnet Console (enabled by default)
 #TELNETCONSOLE_ENABLED = False
@@ -95,4 +95,7 @@ ITEM_PIPELINES = {
 JOBDIR='dianping.com'
 
 
-DOWNLOAD_TIMEOUT = 10
+DOWNLOAD_TIMEOUT = 5
+
+#防止403崩溃
+HTTPERROR_ALLOWED_CODES = [403]

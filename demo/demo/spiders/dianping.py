@@ -55,7 +55,7 @@ class DianpingSpider(scrapy.Spider):
         print('正在爬取第',page,'页店铺')
         for url in shop_urls:
             print('正在爬取',url,'店铺信息')
-            yield scrapy.Request(url=url, callback=self.shop_parse)
+            yield scrapy.Request(url=url, cookies = None, callback=self.shop_parse)
         
         if next_page_url:            
             yield scrapy.Request(url=next_page_url, callback=self.shop_list_parse)
