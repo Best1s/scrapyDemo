@@ -157,15 +157,16 @@ class DemoDownloaderMiddleware(object):
     lock = DeferredLock()
     user_agent = random.choice(USER_AGENTS)
 
-    print("我是初始化，还是被赋值多次。")
+    print("我是Proxy初始化")
     p = Proxy()
     
     proxy_ip = p.get_proxy().get("proxy")
 
     def __init__(self):
-        print("webdriver. 我是初始化，还是被赋值多次。")
-        driver_path = os.getcwd() + "\chromedriver80.0.3987.16.exe"
-        self.browser = webdriver.Chrome(driver_path)
+        print(" 我是webdriver.初始化，")
+        self.driver_path = os.getcwd() + "\chromedriver80.0.3987.16.exe"
+        print(self.driver_path)
+        self.browser = webdriver.Chrome(self.driver_path)
         self.browser.implicitly_wait(10)  # 隐性等待，最长等10秒
     
     def get_cookies(self):
