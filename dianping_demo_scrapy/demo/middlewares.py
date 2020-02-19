@@ -10,14 +10,19 @@ import random
 import time
 import requests
 
+from selenium import webdriver
+
 from scrapy.exceptions import IgnoreRequest
 from twisted.internet.error import TimeoutError
 from twisted.internet.defer import DeferredLock
 
 
+from scrapy.http import HtmlResponse
+
 class Proxy(object):
     url = "http://47.106.254.210/"
     headers = {'Authorization': 'Basic cHJveHk6cHJveHkxMjMh'}
+
     def get_proxy(self):
         return requests.get(self.url + "get/", headers = self.headers).json()
 
@@ -45,6 +50,8 @@ class DemoSpiderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
     # scrapy acts as if the spider middleware does not modify the
     # passed objects.
+
+
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -150,8 +157,16 @@ class DemoDownloaderMiddleware(object):
     lock = DeferredLock()
     user_agent = random.choice(USER_AGENTS)
 
+    print("我是初始化，还是被赋值多次。")
     p = Proxy()
+    
     proxy_ip = p.get_proxy().get("proxy")
+
+    def __init__(self):
+        print("webdriver. 我是初始化，还是被赋值多次。")
+        driver_path = os.getcwd() + "\chromedriver80.0.3987.16.exe"
+        self.browser = webdriver.Chrome(driver_path)
+        self.browser.implicitly_wait(10)  # 隐性等待，最长等10秒
     
     def get_cookies(self):
         self.lock.acquire()
@@ -228,15 +243,31 @@ class DemoDownloaderMiddleware(object):
         print("="*80)
         print("这是一个rsponse")
 
-        if response.status != 200 :
-            proxy_ip = response.meta['proxy']
-            print("page url is:",response.url,"status:",response.status,"proxy_ip is:", proxy_ip)
-            request.cookies = self.get_cookies()
-            request.headers["User-agent"] = self.user_agent
-            proxy_ip = self.proxy_ip
-            request.meta['proxy'] = "http://" + proxy_ip
-            print("new proxy_ip is:",proxy_ip)
-            return request
+        
+
+
+        if response.status != 200 or response.url.split("/")[2] == "verify.meituan.com" :
+            self.browser.get(url = request.url) #获取不是200的数据  使用selenium，查看下并 获取新的cookies
+            try:
+                pass
+                #text = self.browser.find_element_by_xpath("//input[@id='kw']").send_keys("selenium")
+            except:
+                pass
+            time.sleep(5)
+            
+            source = self.browser.page_source       #获取到页面源码数据
+            response = HtmlResponse(url=self.browser.current_url,body=source,encoding='utf-8',request=request)
+            return response
+
+            #proxy_ip = response.meta['proxy']
+            #print("page url is:",response.url,"status:",response.status,"proxy_ip is:", proxy_ip)
+            #request.cookies = self.get_cookies()
+            #request.headers["User-agent"] = self.user_agent
+            #proxy_ip = self.proxy_ip
+            #request.meta['proxy'] = "http://" + proxy_ip
+            #print("new proxy_ip is:",proxy_ip)
+            
+            #return request
         
         
         return response
