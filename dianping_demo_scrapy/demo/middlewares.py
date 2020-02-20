@@ -9,7 +9,7 @@ from scrapy import signals
 import random
 import time
 import requests
-
+import os
 from selenium import webdriver
 
 from scrapy.exceptions import IgnoreRequest
@@ -22,9 +22,12 @@ from scrapy.http import HtmlResponse
 class Proxy(object):
     url = "http://47.106.254.210/"
     headers = {'Authorization': 'Basic cHJveHk6cHJveHkxMjMh'}
-
+    lock = DeferredLock()
     def get_proxy(self):
-        return requests.get(self.url + "get/", headers = self.headers).json()
+        self.lock.acquire()
+        ip = requests.get(self.url + "get/", headers = self.headers).json().get("proxy")
+        self.lock.release()
+        return ip
 
     def delete_proxy(self,proxy):
         requests.get(self.url + "delete/?proxy={}".format(proxy), headers = self.headers)
@@ -154,32 +157,41 @@ class DemoDownloaderMiddleware(object):
         "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT; Avant Browser; Avant Browser; .NET CLR 1.1.4322; .NET CLR 2.0.50727; InfoPath.2)",
     ]
     
-    lock = DeferredLock()
+    
     user_agent = random.choice(USER_AGENTS)
 
-    print("我是Proxy初始化")
     p = Proxy()
     
-    proxy_ip = p.get_proxy().get("proxy")
 
     def __init__(self):
-        print(" 我是webdriver.初始化，")
-        self.driver_path = os.getcwd() + "\chromedriver80.0.3987.16.exe"
-        print(self.driver_path)
-        self.browser = webdriver.Chrome(self.driver_path)
+
+        self.lock = DeferredLock()
+        driver_path = os.getcwd() + "\chromedriver80.0.3987.16.exe"
+        print(driver_path)
+        self.browser = webdriver.Chrome(driver_path)
         self.browser.implicitly_wait(10)  # 隐性等待，最长等10秒
     
-    def get_cookies(self):
+    #def get_cookies(self):
+    #    self.lock.acquire()
+    #    cookies = input("请输入浏览器中的cookies:")
+    #    #cookies = "cy=4; cityid=4; cye=guangzhou; _lxsdk_cuid=170514ff1bdc8-063a3198386eb1-54123310-1fa400-170514ff1bdc8; _lxsdk=170514ff1bdc8-063a3198386eb1-54123310-1fa400-170514ff1bdc8; _hc.v=b958987a-6757-2809-fa15-d13116dc1f45.1581912159; s_ViewType=10; _lxsdk_s=17051e7d852-bfb-b01-a92%7C%7C36"
+    #    if not cookies:
+    #        cookies = input("请输入浏览器中的cookies:")
+    #    cookies = {i.split("=")[0]:i.split("=")[1] for i in cookies.split("; ")}
+    #    self.lock.release()
+    #    return cookies
+
+    def get_bro_cookies(self):
         self.lock.acquire()
-        cookies = input("请输入浏览器中的cookies:")
-        #cookies = "cy=4; cityid=4; cye=guangzhou; _lxsdk_cuid=170514ff1bdc8-063a3198386eb1-54123310-1fa400-170514ff1bdc8; _lxsdk=170514ff1bdc8-063a3198386eb1-54123310-1fa400-170514ff1bdc8; _hc.v=b958987a-6757-2809-fa15-d13116dc1f45.1581912159; s_ViewType=10; _lxsdk_s=17051e7d852-bfb-b01-a92%7C%7C36"
-        if not cookies:
-            cookies = input("请输入浏览器中的cookies:")
-        cookies = {i.split("=")[0]:i.split("=")[1] for i in cookies.split("; ")}
+        c = {}
+        self.browser.get("http://www.dianping.com")
+        cookies = self.browser.get_cookies()
+        self.browser.quit()
+        for cookie in cookies:
+                c[cookie["name"]] = cookie["value"]
         self.lock.release()
-        return cookies
-
-
+        return c
+        
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -210,21 +222,23 @@ class DemoDownloaderMiddleware(object):
         #if not request.cookies:
         #    print("set cookies :")
         #    request.cookies = self.get_cookies
-            
+        
+        #begin download page, get proxy ip
+
         if  "proxy" not in request.meta or not request.meta["proxy"]:
-            proxy_ip = self.proxy_ip
-            request.meta['proxy'] = "http://" + proxy_ip
+            #proxy_ip = self.p.get_proxy()
+            #print("*********************************************proxy_ip is:",proxy_ip)
+            #request.meta['proxy'] = "http://" + proxy_ip
             request.headers["User-agent"] = self.user_agent            
-            print("*********************************************proxxy_ip is:",proxy_ip)
+            
 
         if not request.cookies:
-            request.cookies = {'cy': '4', 'cityid': '4', 'cye': 'guangzhou', '_lxsdk_cuid': '17052864021c8-0ddc1478b801a8-54123310-1fa400-17052864021c8', '_lxsdk': '17052864021c8-0ddc1478b801a8-54123310-1fa400-17052864021c8', '_hc.v': 'e8a58956-8ea5-ddd9-2c2e-c5216c3dc9a6.1581932495', 's_ViewType': '10', '_lxsdk_s': '17052863dbd-619-26-3a6%7C%7C87'}
-            print("request.cookies is",request.cookies)
-            
+            cookies = self.get_bro_cookies()
+            print("*"*40)
+            print("get cookies is",cookies)
+            request.cookies = cookies               
 
-        if request.url.split("/")[2] == "verify.meituan.com":
-            print("*********************************************url is: verify.meituan.com")
-            raise IgnoreRequest('url filter is verify.meituan.com')            
+        #if request.url.split("/")[2] == "verify.meituan.com":         
 
         return None
 
@@ -243,33 +257,14 @@ class DemoDownloaderMiddleware(object):
 
         print("="*80)
         print("这是一个rsponse")
-
-        
-
+        print("response request  cookies is", request.cookies)
 
         if response.status != 200 or response.url.split("/")[2] == "verify.meituan.com" :
-            self.browser.get(url = request.url) #获取不是200的数据  使用selenium，查看下并 获取新的cookies
-            try:
-                pass
-                #text = self.browser.find_element_by_xpath("//input[@id='kw']").send_keys("selenium")
-            except:
-                pass
-            time.sleep(5)
-            
-            source = self.browser.page_source       #获取到页面源码数据
-            response = HtmlResponse(url=self.browser.current_url,body=source,encoding='utf-8',request=request)
-            return response
+            request.cookies = None
+            self.browser.get(response.url)
 
-            #proxy_ip = response.meta['proxy']
-            #print("page url is:",response.url,"status:",response.status,"proxy_ip is:", proxy_ip)
-            #request.cookies = self.get_cookies()
-            #request.headers["User-agent"] = self.user_agent
-            #proxy_ip = self.proxy_ip
-            #request.meta['proxy'] = "http://" + proxy_ip
-            #print("new proxy_ip is:",proxy_ip)
-            
-            #return request
-        
+            #response = HtmlResponse(url=self.browser.current_url,body=source,encoding='utf-8',request=request)            
+            return request        
         
         return response
 
@@ -282,8 +277,10 @@ class DemoDownloaderMiddleware(object):
         # - return a Response object: stops process_exception() chain
         # - return a Request object: stops process_exception() chain
         if isinstance(exception, TimeoutError):
-            self.p.delete_proxy(response.meta['proxy'])
-            request.meta['proxy'] = ""
+            proxy_ip = request.meta["proxy"]
+            print("TimeoutError,response proxy ip is :",proxy_ip)
+            self.p.delete_proxy(proxy_ip)
+            del request.meta["proxy"]
             return request
         #return request
         
