@@ -8,8 +8,7 @@ class DianpingSpider(scrapy.Spider):
     allowed_domains = ['dianping.com','www.dianping.com']
     search_words = ['美容院']
     start_urls = [f'http://www.dianping.com/search/keyword/4/0_{word}' for word in search_words ]
-
-
+    
     def verify_url(self, status):
     #    if url not in self.allowed_domains or status == 403:
     #        print("="*80)

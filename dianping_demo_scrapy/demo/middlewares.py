@@ -12,22 +12,37 @@ import requests
 import os
 from selenium import webdriver
 
+import demo.user_agent as ua
+
 from scrapy.exceptions import IgnoreRequest
 from twisted.internet.error import TimeoutError
 from twisted.internet.defer import DeferredLock
-
-
 from scrapy.http import HtmlResponse
 
 class Proxy(object):
-    url = "http://47.106.254.210/"
-    headers = {'Authorization': 'Basic cHJveHk6cHJveHkxMjMh'}
-    lock = DeferredLock()
+    def __init__(self):
+        self.url = "http://47.106.254.210/"
+        self.headers = {'Authorization': 'Basic cHJveHk6cHJveHkxMjMh'}
+        self.lock = DeferredLock()
     def get_proxy(self):
         self.lock.acquire()
         ip = requests.get(self.url + "get/", headers = self.headers).json().get("proxy")
-        self.lock.release()
-        return ip
+        try:
+            r = requests.get("http://www.dianping.com",headers={"User-Agent":random.choice(ua.USER_AGENTS)}, proxies={"http":"http://" + ip}, timeout=3)
+        except requests.exceptions.ConnectionError as Rerror:
+            self.delete_proxy(proxy=ip)
+            print(Rerror)
+            self.get_proxy()
+        except Exception as e:
+            print(e)
+            self.get_proxy()
+        else:
+            if r.status_code == 200:
+                self.lock.release() 
+                return ip
+            else:
+                self.get_proxy()
+        
 
     def delete_proxy(self,proxy):
         requests.get(self.url + "delete/?proxy={}".format(proxy), headers = self.headers)
@@ -49,12 +64,32 @@ class Proxy(object):
         delete_proxy(proxy)
         return None
 
+class UseBrowser(object):
+    def __init__(self, *args, **kwargs):
+        self.lock = DeferredLock()
+        driver_path = os.getcwd() + "\chromedriver80.0.3987.16.exe"
+        self.browser = webdriver.Chrome(driver_path)
+        self.browser.implicitly_wait(10)  # 隐性等待，最长等10秒
+    
+    def get_bro_cookies(self):
+        self.lock.acquire()
+        self.browser.get("http://www.dianping.com")
+        cookies = self.browser.get_cookies()
+        self.browser.quit()
+        self.lock.release()
+
+        return cookies
+
+    def del_bro_cookies(self):
+        self.lock.acquire()
+        self.browser.delete_all_cookies()
+        self.lock.release()
+        return True
+
 class DemoSpiderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
     # scrapy acts as if the spider middleware does not modify the
     # passed objects.
-
-
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -102,97 +137,13 @@ class DemoSpiderMiddleware(object):
 class DemoDownloaderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
     # scrapy acts as if the downloader middleware does not modify the
-    # passed objects.
-    USER_AGENTS = [
-        # Opera
-        "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36 OPR/26.0.1656.60",
-        "Opera/8.0 (Windows NT 5.1; U; en)",
-        "Mozilla/5.0 (Windows NT 5.1; U; en; rv:1.8.1) Gecko/20061208 Firefox/2.0.0 Opera 9.50",
-        "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; en) Opera 9.50",
-        # Firefox
-        "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:34.0) Gecko/20100101 Firefox/34.0",
-        "Mozilla/5.0 (X11; U; Linux x86_64; zh-CN; rv:1.9.2.10) Gecko/20100922 Ubuntu/10.10 (maverick) Firefox/3.6.10",
-        # Safari
-        "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/534.57.2 (KHTML, like Gecko) Version/5.1.7 Safari/534.57.2",
-        # chrome
-        "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36",
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11",
-        "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US) AppleWebKit/534.16 (KHTML, like Gecko) Chrome/10.0.648.133 Safari/534.16",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36",
-        #Chrome 44.0.2403.155
-        "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML like Gecko) Chrome/44.0.2403.155 Safari/537.36",
-        #Chrome 41.0.2228.0
-        "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36",
-        #Chrome 41.0.2227.1
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.1 Safari/537.36",
-        #Chrome 41.0.2227.0
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.0 Safari/537.36",
-        "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.0 Safari/537.36",
-        # 360
-        "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.101 Safari/537.36",
-        "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
-        # 淘宝浏览器
-        "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.11 TaoBrowser/2.0 Safari/536.11",
-        # 猎豹浏览器
-        "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/21.0.1180.71 Safari/537.1 LBBROWSER",
-        "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; .NET4.0C; .NET4.0E; LBBROWSER)",
-        "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; QQDownload 732; .NET4.0C; .NET4.0E; LBBROWSER)",
-        # QQ浏览器
-        "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; .NET4.0C; .NET4.0E; QQBrowser/7.0.3698.400)",
-        "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; QQDownload 732; .NET4.0C; .NET4.0E)",
-        # sogou浏览器
-        "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.84 Safari/535.11 SE 2.X MetaSr 1.0",
-        "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; Trident/4.0; SV1; QQDownload 732; .NET4.0C; .NET4.0E; SE 2.X MetaSr 1.0)",
-        # maxthon浏览器
-        "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Maxthon/4.4.3.4000 Chrome/30.0.1599.101 Safari/537.36",
-        # UC浏览器
-        "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.122 UBrowser/4.0.3214.0 Safari/537.36",
-        #Avant Browser
-        "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; Trident/4.0; Avant Browser; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0)",
-        "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.0; Trident/4.0; Avant Browser; SLCC1; .NET CLR 2.0.50727; Media Center PC 5.0; .NET CLR 3.0.04506; .NET CLR 3.5.21022; InfoPath.2)",
-        "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.0; Trident/4.0; Avant Browser; SLCC1; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30618; InfoPath.1)",
-        "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0; GTB6.4; Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1) ; chromeframe; Avant Browser; .NET CLR 1.1.4322; .NET CLR 2.0.50727; .NET CLR 3.0.04506.30; InfoPath.1; .NET CLR 3.0.4506",
-        "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0; GTB5; Avant Browser; .NET CLR 1.1.4322; .NET CLR 2.0.50727)",
-        "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0; Avant Browser; Avant Browser; .NET CLR 2.0.50727)",
-        "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT; Avant Browser; Avant Browser; .NET CLR 1.1.4322; .NET CLR 2.0.50727; InfoPath.2)",
-    ]
-    
-    
-    user_agent = random.choice(USER_AGENTS)
-
-    p = Proxy()
-    
-
+    # passed objects.  
     def __init__(self):
-
-        self.lock = DeferredLock()
-        driver_path = os.getcwd() + "\chromedriver80.0.3987.16.exe"
-        print(driver_path)
-        self.browser = webdriver.Chrome(driver_path)
-        self.browser.implicitly_wait(10)  # 隐性等待，最长等10秒
-    
-    #def get_cookies(self):
-    #    self.lock.acquire()
-    #    cookies = input("请输入浏览器中的cookies:")
-    #    #cookies = "cy=4; cityid=4; cye=guangzhou; _lxsdk_cuid=170514ff1bdc8-063a3198386eb1-54123310-1fa400-170514ff1bdc8; _lxsdk=170514ff1bdc8-063a3198386eb1-54123310-1fa400-170514ff1bdc8; _hc.v=b958987a-6757-2809-fa15-d13116dc1f45.1581912159; s_ViewType=10; _lxsdk_s=17051e7d852-bfb-b01-a92%7C%7C36"
-    #    if not cookies:
-    #        cookies = input("请输入浏览器中的cookies:")
-    #    cookies = {i.split("=")[0]:i.split("=")[1] for i in cookies.split("; ")}
-    #    self.lock.release()
-    #    return cookies
-
-    def get_bro_cookies(self):
-        self.lock.acquire()
-        c = {}
-        self.browser.get("http://www.dianping.com")
-        cookies = self.browser.get_cookies()
-        self.browser.quit()
-        for cookie in cookies:
-                c[cookie["name"]] = cookie["value"]
-        self.lock.release()
-        return c
-        
-
+        self.p = Proxy()
+        self.browser = UseBrowser()
+        self.current_proxy = None
+   
+          
     @classmethod
     def from_crawler(cls, crawler):
         # This method is used by Scrapy to create your spiders.
@@ -219,26 +170,19 @@ class DemoDownloaderMiddleware(object):
         # - 如果其raise一个 IgnoreRequest 异常，则安装的下载中间件的 process_exception() 方法会被调用。
         #   如果没有任何一个方法处理该异常， 则request的errback(Request.errback)方法会被调用。如果没有代码处理抛出的异常， 则该异常被忽略且不记录(不同于其他异常那样)。
         
-        #if not request.cookies:
-        #    print("set cookies :")
-        #    request.cookies = self.get_cookies
-        
-        #begin download page, get proxy ip
 
-        if  "proxy" not in request.meta or not request.meta["proxy"]:
-            #proxy_ip = self.p.get_proxy()
-            #print("*********************************************proxy_ip is:",proxy_ip)
-            #request.meta['proxy'] = "http://" + proxy_ip
-            request.headers["User-agent"] = self.user_agent            
+        request.headers["User-Agent"] = random.choice(ua.USER_AGENTS)        
             
 
         if not request.cookies:
             cookies = self.get_bro_cookies()
             print("*"*40)
             print("get cookies is",cookies)
-            request.cookies = cookies               
-
-        #if request.url.split("/")[2] == "verify.meituan.com":         
+            request.cookies = cookies
+        if 'proxy' not in request.meta or self.current_proxy.is_expiring:
+            # 请求代理
+            self.p.get_proxy()
+            request.meta['proxy'] = self.current_proxy.proxy
 
         return None
 
@@ -257,14 +201,36 @@ class DemoDownloaderMiddleware(object):
 
         print("="*80)
         print("这是一个rsponse")
-        print("response request  cookies is", request.cookies)
+        if response.url.split("/")[2] == "verify.meituan.com":
+            self.i = self.i+1
+            self.browser.get(request.url)
+            time.sleep(5)
+            print("browser url is ",self.browser.current_url())
+            request.url = self.browser.current_url()
+            if self.i > 3: 
+                self.i = 0
+                return response
+            else:
+                return request
+            #return response
 
-        if response.status != 200 or response.url.split("/")[2] == "verify.meituan.com" :
-            request.cookies = None
+        if response.status != 200 :
+            self.i = self.i+1
+            print("this is not 200 status ,cookies is ", request.cookies)
+            print("url is:",request.url)
+            #self.browser.add_cookie(request.cookies)
             self.browser.get(response.url)
-
-            #response = HtmlResponse(url=self.browser.current_url,body=source,encoding='utf-8',request=request)            
-            return request        
+            #request.cookies = None
+            #self.browser.get(response.url)
+            #response = HtmlResponse(url=self.browser.current_url,status=200,body=self.browser.page_source.encoding='utf-8',request=request)
+            request.cookies=self.browser.get_cookies()
+            print("renew url is",response.url)
+            if self.i > 3: 
+                self.i = 0
+                return response
+            else:
+                return request
+ 
         
         return response
 
