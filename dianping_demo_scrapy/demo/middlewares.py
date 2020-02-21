@@ -24,31 +24,27 @@ class Proxy(object):
         self.url = "http://47.106.254.210/"
         self.headers = {'Authorization': 'Basic cHJveHk6cHJveHkxMjMh'}
         self.lock = DeferredLock()
-    def get_proxy(self):
-        self.lock.acquire()
-        ip = requests.get(self.url + "get/", headers = self.headers).json().get("proxy")
-        try:
-            r = requests.get("http://www.dianping.com",headers={"User-Agent":random.choice(ua.USER_AGENTS)}, proxies={"http":"http://" + ip}, timeout=3)
-        except requests.exceptions.ConnectionError as Rerror:
-            self.delete_proxy(proxy=ip)
-            print(Rerror)
-            self.get_proxy()
-        except Exception as e:
-            print(e)
-            self.get_proxy()
-        else:
-            if r.status_code == 200:
-                self.lock.release() 
-                return ip
-            else:
-                self.get_proxy()
-        
 
     def delete_proxy(self,proxy):
         requests.get(self.url + "delete/?proxy={}".format(proxy), headers = self.headers)
+        print("delete proxy ip success")
 
-    # your spider code
-
+    def get_proxy(self):
+        self.lock.acquire()        
+        try:
+            ip = requests.get(self.url + "get/", headers = self.headers).json().get("proxy")
+            r = requests.get("http://www.dianping.com",headers={"User-Agent":random.choice(ua.USER_AGENTS)}, proxies={"http":"http://" + ip}, timeout=3)
+        except requests.exceptions.ConnectionError :
+            self.delete_proxy(proxy=ip)
+        except Exception as e:
+            print("Exception ERROR:",e)
+        else:
+            if r.status_code == 200:
+                self.lock.release() 
+                return "http://" + ip
+            else:
+                return False
+            
     def getHtml(self):
         # ....
         retry_count = 5
@@ -56,16 +52,14 @@ class Proxy(object):
         while retry_count > 0:
             try:
                 html = requests.get('https://www.example.com', proxies={"http": "http://{}".format(proxy)})
-
                 return html
             except Exception:
                 retry_count -= 1
-
         delete_proxy(proxy)
         return None
 
 class UseBrowser(object):
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
         self.lock = DeferredLock()
         driver_path = os.getcwd() + "\chromedriver80.0.3987.16.exe"
         self.browser = webdriver.Chrome(driver_path)
@@ -75,9 +69,10 @@ class UseBrowser(object):
         self.lock.acquire()
         self.browser.get("http://www.dianping.com")
         cookies = self.browser.get_cookies()
-        self.browser.quit()
+        #self.browser.quit()
         self.lock.release()
-
+        cookies = "cy=4; cityid=4; cye=guangzhou; cy=4; cye=guangzhou; _lxsdk_cuid=1706866c128c8-08ea7fb354e66e-313f68-1fa400-1706866c128c8; _lxsdk=1706866c128c8-08ea7fb354e66e-313f68-1fa400-1706866c128c8; _hc.v=51eb7fb0-09e5-bb42-a65e-2c68b953553e.1582299530; s_ViewType=10; _lxsdk_s=1706866b3f3-8cc-9f0-38e%7C%7C68"
+        cookies = {i.split("=")[0]:i.split("=")[1] for i in cookies.split("; ")}
         return cookies
 
     def del_bro_cookies(self):
@@ -141,7 +136,8 @@ class DemoDownloaderMiddleware(object):
     def __init__(self):
         self.p = Proxy()
         self.browser = UseBrowser()
-        self.current_proxy = None
+        self.proxy_status = False
+
    
           
     @classmethod
@@ -175,14 +171,13 @@ class DemoDownloaderMiddleware(object):
             
 
         if not request.cookies:
-            cookies = self.get_bro_cookies()
+            cookies = self.browser.get_bro_cookies()
             print("*"*40)
             print("get cookies is",cookies)
             request.cookies = cookies
-        if 'proxy' not in request.meta or self.current_proxy.is_expiring:
-            # 请求代理
-            self.p.get_proxy()
-            request.meta['proxy'] = self.current_proxy.proxy
+        if 'proxy' not in request.meta or not self.proxy_status:
+            # 请求代理            
+            request.meta['proxy'] = self.p.get_proxy()
 
         return None
 
@@ -201,37 +196,14 @@ class DemoDownloaderMiddleware(object):
 
         print("="*80)
         print("这是一个rsponse")
-        if response.url.split("/")[2] == "verify.meituan.com":
-            self.i = self.i+1
-            self.browser.get(request.url)
-            time.sleep(5)
-            print("browser url is ",self.browser.current_url())
-            request.url = self.browser.current_url()
-            if self.i > 3: 
-                self.i = 0
-                return response
-            else:
-                return request
-            #return response
+        
+        #response.url.split("/")[2] == "verify.meituan.com":
 
         if response.status != 200 :
-            self.i = self.i+1
-            print("this is not 200 status ,cookies is ", request.cookies)
-            print("url is:",request.url)
-            #self.browser.add_cookie(request.cookies)
-            self.browser.get(response.url)
-            #request.cookies = None
-            #self.browser.get(response.url)
-            #response = HtmlResponse(url=self.browser.current_url,status=200,body=self.browser.page_source.encoding='utf-8',request=request)
-            request.cookies=self.browser.get_cookies()
-            print("renew url is",response.url)
-            if self.i > 3: 
-                self.i = 0
-                return response
-            else:
-                return request
- 
-        
+            request.cookies = None
+            request.meta["proxy"] = self.p.get_proxy()
+            return request
+            #response = HtmlResponse(url=self.browser.current_url,status=200,body=self.browser.page_source.encoding='utf-8',request=request)        
         return response
 
     def process_exception(self, request, exception, spider):
@@ -243,12 +215,8 @@ class DemoDownloaderMiddleware(object):
         # - return a Response object: stops process_exception() chain
         # - return a Request object: stops process_exception() chain
         if isinstance(exception, TimeoutError):
-            proxy_ip = request.meta["proxy"]
-            print("TimeoutError,response proxy ip is :",proxy_ip)
-            self.p.delete_proxy(proxy_ip)
-            del request.meta["proxy"]
-            return request
-        #return request
+            pass
+        return None
         
 
     def spider_opened(self, spider):
