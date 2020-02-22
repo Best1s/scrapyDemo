@@ -16,6 +16,7 @@ import demo.user_agent as ua
 
 from scrapy.exceptions import IgnoreRequest
 from twisted.internet.error import TimeoutError
+from selenium.common.exceptions import TimeoutException
 from twisted.internet.defer import DeferredLock
 from scrapy.http import HtmlResponse
 
@@ -31,19 +32,20 @@ class Proxy(object):
 
     def get_proxy(self):
         self.lock.acquire()        
-        try:
-            ip = requests.get(self.url + "get/", headers = self.headers).json().get("proxy")
-            r = requests.get("http://www.dianping.com",headers={"User-Agent":random.choice(ua.USER_AGENTS)}, proxies={"http":"http://" + ip}, timeout=3)
-        except requests.exceptions.ConnectionError :
-            self.delete_proxy(proxy=ip)
-        except Exception as e:
-            print("Exception ERROR:",e)
-        else:
-            if r.status_code == 200:
-                self.lock.release() 
-                return "http://" + ip
+        while True:
+            try:
+                ip = requests.get(self.url + "get/", headers = self.headers).json().get("proxy")
+                r = requests.get("http://www.dianping.com",headers={"User-Agent":random.choice(ua.USER_AGENTS)}, proxies={"http":"http://" + ip}, timeout=3)
+            except requests.exceptions.ConnectionError :
+                self.delete_proxy(proxy=ip)
+            except Exception as e:
+                print("Exception ERROR:",e)
             else:
-                return False
+                if r.status_code == 200:
+                    self.lock.release()
+                    break
+        return "http://" + ip
+
             
     def getHtml(self):
         # ....
@@ -70,10 +72,22 @@ class UseBrowser(object):
         self.browser.get("http://www.dianping.com")
         cookies = self.browser.get_cookies()
         #self.browser.quit()
+        c = {}
+        for cookie in cookies:
+            if cookie["name"] == "_lxsdk_s":
+                cookie["value"] = self.dispose_lxsdk_s(cookie["value"])
+            c[cookie["name"]] = cookie["value"]
+        print("c cookies is ", c)
         self.lock.release()
-        cookies = "cy=4; cityid=4; cye=guangzhou; cy=4; cye=guangzhou; _lxsdk_cuid=1706866c128c8-08ea7fb354e66e-313f68-1fa400-1706866c128c8; _lxsdk=1706866c128c8-08ea7fb354e66e-313f68-1fa400-1706866c128c8; _hc.v=51eb7fb0-09e5-bb42-a65e-2c68b953553e.1582299530; s_ViewType=10; _lxsdk_s=1706866b3f3-8cc-9f0-38e%7C%7C68"
-        cookies = {i.split("=")[0]:i.split("=")[1] for i in cookies.split("; ")}
+        #cookies = "cy=4; cityid=4; cye=guangzhou; cy=4; cye=guangzhou; _lxsdk_cuid=1706866c128c8-08ea7fb354e66e-313f68-1fa400-1706866c128c8; _lxsdk=1706866c128c8-08ea7fb354e66e-313f68-1fa400-1706866c128c8; _hc.v=51eb7fb0-09e5-bb42-a65e-2c68b953553e.1582299530; s_ViewType=10; _lxsdk_s=1706866b3f3-8cc-9f0-38e%7C%7C68"
+        #cookies = {i.split("=")[0]:i.split("=")[1] for i in cookies.split("; ")}
         return cookies
+
+    def dispose_lxsdk_s(self,cookie):
+        cookie = cookie.split("%7C%7C")
+        print(cookie)
+        new_cookie =  cookie[0] + "%7C%7C" + str(int(cookie[1])+1)
+        return new_cookie
 
     def del_bro_cookies(self):
         self.lock.acquire()
@@ -135,10 +149,15 @@ class DemoDownloaderMiddleware(object):
     # passed objects.  
     def __init__(self):
         self.p = Proxy()
-        self.browser = UseBrowser()
-        self.proxy_status = False
+        self.lock = DeferredLock()
+        driver_path = os.getcwd() + "\chromedriver80.0.3987.16.exe"
+        self.browser = webdriver.Chrome(driver_path)
+        self.browser.implicitly_wait(10)  # 隐性等待，最长等10秒
+        self.browser.set_window_size(700, 1000)
+        self.browser.get("http://www.dianping.com")
 
-   
+    def __del__(self):
+       self.browser.close()
           
     @classmethod
     def from_crawler(cls, crawler):
@@ -167,19 +186,31 @@ class DemoDownloaderMiddleware(object):
         #   如果没有任何一个方法处理该异常， 则request的errback(Request.errback)方法会被调用。如果没有代码处理抛出的异常， 则该异常被忽略且不记录(不同于其他异常那样)。
         
 
-        request.headers["User-Agent"] = random.choice(ua.USER_AGENTS)        
+        #request.headers["User-Agent"] = random.choice(ua.USER_AGENTS)      
+        #if not request.cookies:
+        #    cookies = self.browser.get_bro_cookies()
+        #    print("*"*40)
+        #    print("get cookies is",cookies)
+        #    request.cookies = cookies
+        #if 'proxy' not in request.meta or not self.proxy_status:
+        #    # 请求代理            
+        #    request.meta['proxy'] = self.p.get_proxy()
+        
+        try:
             
-
-        if not request.cookies:
-            cookies = self.browser.get_bro_cookies()
-            print("*"*40)
-            print("get cookies is",cookies)
-            request.cookies = cookies
-        if 'proxy' not in request.meta or not self.proxy_status:
-            # 请求代理            
-            request.meta['proxy'] = self.p.get_proxy()
-
-        return None
+            if self.browser.current_url.split("/")[2] == "verify.meituan.com":
+                self.lock.acquire()
+                self.browser.delete_all_cookies()
+                self.browser.get("http://www.dianping.com")
+                self.browser.get(request.url)
+                self.lock.release()
+            else:
+                self.browser.get(request.url)
+        except TimeoutException:
+            return HtmlResponse(url=request.url, status=500, request=request)
+        else:
+            return HtmlResponse(url=request.url, body=self.browser.page_source, request=request, encoding='utf-8', status=200)
+        
 
 
     def process_response(self, request, response, spider):
@@ -194,15 +225,14 @@ class DemoDownloaderMiddleware(object):
         # - 如果其返回一个 Request 对象，则中间件链停止， 返回的request会被下载器调度下载。处理类似于 process_request() 返回request所做的那样。
         # - 如果其抛出一个 IgnoreRequest 异常，则调用request的errback(Request.errback)。 如果没有代码处理抛出的异常，则该异常被忽略且不记录(不同于其他异常那样)。  会抛出异常？还是不会？
 
-        print("="*80)
-        print("这是一个rsponse")
+
         
         #response.url.split("/")[2] == "verify.meituan.com":
 
-        if response.status != 200 :
-            request.cookies = None
-            request.meta["proxy"] = self.p.get_proxy()
-            return request
+        #if response.status != 200 :
+        #    request.cookies = None
+        #    request.meta["proxy"] = self.p.get_proxy()
+        #    return request
             #response = HtmlResponse(url=self.browser.current_url,status=200,body=self.browser.page_source.encoding='utf-8',request=request)        
         return response
 

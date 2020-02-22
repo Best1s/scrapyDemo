@@ -10,9 +10,6 @@ class DianpingSpider(scrapy.Spider):
     start_urls = [f'http://www.dianping.com/search/keyword/4/0_{word}' for word in search_words ]
     
     def verify_url(self, status):
-    #    if url not in self.allowed_domains or status == 403:
-    #        print("="*80)
-    #        print("page url is:",url)
          self.crawler.engine.close_spider(self, 'url change, stop crawl!')
 
     def parse(self,response):
@@ -20,12 +17,10 @@ class DianpingSpider(scrapy.Spider):
         按区爬取，获取全部区链接url  id="region-nav"
         '''
         #self.verify_url(url=response.url.split("/")[2])
-
         regions = response.xpath('//div[@id="region-nav"]/a')
         for region in regions:
             url = region.xpath('./@href').get()     
             yield scrapy.Request(url=url, callback=self.road_parse)
-
 
     def road_parse(self,response):
         '''
