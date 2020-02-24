@@ -54,12 +54,3 @@ USER_AGENTS = [
 
 
 
-    #def get_cookies(self):
-    #    self.lock.acquire()
-    #    cookies = input("请输入浏览器中的cookies:")
-    #    #cookies = "cy=4; cityid=4; cye=guangzhou; _lxsdk_cuid=170514ff1bdc8-063a3198386eb1-54123310-1fa400-170514ff1bdc8; _lxsdk=170514ff1bdc8-063a3198386eb1-54123310-1fa400-170514ff1bdc8; _hc.v=b958987a-6757-2809-fa15-d13116dc1f45.1581912159; s_ViewType=10; _lxsdk_s=17051e7d852-bfb-b01-a92%7C%7C36"
-    #    if not cookies:
-    #        cookies = input("请输入浏览器中的cookies:")
-    #    cookies = {i.split("=")[0]:i.split("=")[1] for i in cookies.split("; ")}
-    #    self.lock.release()
-    #    return cookies

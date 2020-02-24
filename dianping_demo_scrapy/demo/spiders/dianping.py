@@ -48,7 +48,7 @@ class DianpingSpider(scrapy.Spider):
 
         print('正在爬取第',page,'页店铺')
         for url in shop_urls:
-            print('正在爬取',url,'店铺信息')
+            
             yield scrapy.Request(url=url, cookies = None, callback=self.shop_parse)
         
         if next_page_url:            
@@ -56,10 +56,8 @@ class DianpingSpider(scrapy.Spider):
 
 
     def shop_parse(self,response):
-    #def parse(self,response):
 
-        #self.verify_url(url=response.url.split("/")[2])
-
+        print('正在爬取',response.url,'店铺信息')
         title = response.xpath('//div[@id="basic-info"]/h1[@class="shop-name"]/text()').get()   #标题
         
         if title:

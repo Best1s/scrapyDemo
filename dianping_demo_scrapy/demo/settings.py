@@ -56,7 +56,10 @@ DEFAULT_REQUEST_HEADERS = {
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
-    'demo.middlewares.DemoDownloaderMiddleware': 543,
+   # 'demo.middlewares.DemoDownloaderMiddleware': 543,
+    'demo.uamiddleware.UaDownloaderMiddleware': 544,
+    #'demo.proxymiddleware.ProxyMiddleWare': 545,
+    'demo.cooksiemiddleware.CookiesDownloaderMiddleware2': 546,
 }
 
 # Enable or disable extensions
@@ -98,4 +101,4 @@ JOBDIR='dianping.com'
 DOWNLOAD_TIMEOUT = 5
 
 #防止403崩溃
-HTTPERROR_ALLOWED_CODES = [302]
+HTTPERROR_ALLOWED_CODES = [302,403]
