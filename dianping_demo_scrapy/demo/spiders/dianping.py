@@ -6,8 +6,9 @@ from ..items import  DemoItem
 class DianpingSpider(scrapy.Spider):
     name = 'dianping'
     allowed_domains = ['dianping.com','www.dianping.com']
-    search_words = ['美容院']
-    start_urls = [f'http://www.dianping.com/search/keyword/4/0_{word}' for word in search_words ]
+    #search_words = ['美容院']
+    #start_urls = [f'http://www.dianping.com/search/keyword/4/0_{word}' for word in search_words ]
+    start_urls = ["http://www.dianping.com/shijiazhuang/ch50/g123"]
     
     def verify_url(self, status):
          self.crawler.engine.close_spider(self, 'url change, stop crawl!')
@@ -19,8 +20,10 @@ class DianpingSpider(scrapy.Spider):
         #self.verify_url(url=response.url.split("/")[2])
         regions = response.xpath('//div[@id="region-nav"]/a')
         for region in regions:
-            url = region.xpath('./@href').get()     
-            yield scrapy.Request(url=url, callback=self.road_parse)
+            url = region.xpath('./@href').get()
+            if url == "javascript:;":
+                continue
+            yield scrapy.Request(url=url, callback=self.road_parse,dont_filter=True)
 
     def road_parse(self,response):
         '''
@@ -33,7 +36,7 @@ class DianpingSpider(scrapy.Spider):
             url = road.xpath('./@href').get()
             if url == response.url:
                 continue
-            yield scrapy.Request(url=url, callback=self.shop_list_parse)
+            yield scrapy.Request(url=url, callback=self.shop_list_parse,dont_filter=True)
         
 
     def shop_list_parse(self,response):
@@ -47,8 +50,7 @@ class DianpingSpider(scrapy.Spider):
         next_page_url =  response.xpath('//div[@class="page"]/a[last()]/@href').get()    #下一页url             
 
         print('正在爬取第',page,'页店铺')
-        for url in shop_urls:
-            
+        for url in shop_urls:            
             yield scrapy.Request(url=url, cookies = None, callback=self.shop_parse)
         
         if next_page_url:            
@@ -73,7 +75,7 @@ class DianpingSpider(scrapy.Spider):
         tel = response.xpath('//div[@id="basic-info"]/p[@class="expand-info tel"]/span[@itemprop="tel"]/text()').getall()   #电话
         url =  response.request.url     #店铺url
 
-        print("*"*40 + "获取到数据" + '*'*40)
+        print("*"*40 + "获取到数据" + '*'*29)
 
         item = DemoItem(title=title, tel=tel, address=address, url=url)
         yield item

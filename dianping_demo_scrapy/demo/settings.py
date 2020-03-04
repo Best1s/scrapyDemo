@@ -58,8 +58,9 @@ DEFAULT_REQUEST_HEADERS = {
 DOWNLOADER_MIDDLEWARES = {
    # 'demo.middlewares.DemoDownloaderMiddleware': 543,
     'demo.uamiddleware.UaDownloaderMiddleware': 544,
-    #'demo.proxymiddleware.ProxyMiddleWare': 545,
-    'demo.cooksiemiddleware.CookiesDownloaderMiddleware2': 546,
+    'demo.proxymiddleware.ProxyMiddleWare': 570,
+    #'demo.cooksiemiddleware.CookiesDownloaderMiddleware': 546,
+    'demo.usehandaddcookiemid.UseHandAddCookiesDownloaderMiddleware': 560,
 }
 
 # Enable or disable extensions

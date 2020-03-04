@@ -1,5 +1,5 @@
 import requests
-import demo.user_agent as ua
+import demo.uapool as ua
 import random
 import time
 
@@ -18,17 +18,17 @@ class Proxy(object):
         while True:
             try:
                 ip = requests.get(self.url + "get/", headers = self.headers).json().get("proxy")
-                r = requests.get("http://www.dianping.com",headers={"User-Agent":random.choice(ua.USER_AGENTS)}, proxies={"http":"http://" + ip}, timeout=3)
+                r = requests.get("http://www.dianping.com/shop/21134863",headers={"User-Agent":random.choice(ua.USER_AGENTS)}, proxies={"http":"http://" + ip}, timeout=3)
                 time.sleep(0.5)
             #except requests.exceptions.ConnectionError :
             #    self.delete_proxy(proxy=ip)
             except Exception as e:
                 self.delete_proxy(proxy=ip)
-            else:
-                print("status is :" ,r.status_code)
+            else:                
                 if r.status_code == 200:
                     break
-                    #self.lock.release()                    
+                    #self.lock.release()
+        print("proxy ip is : http://" + ip)                    
         return "http://" + ip
 
 
