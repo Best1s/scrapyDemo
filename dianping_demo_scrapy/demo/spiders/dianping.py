@@ -7,9 +7,11 @@ class DianpingSpider(scrapy.Spider):
     name = 'dianping'
     allowed_domains = ['dianping.com','www.dianping.com']
     #search_words = ['美容院']
+    citys = ['fixin','liaoyang','panjin','tieling','chaoyang','huludao']
     #start_urls = [f'http://www.dianping.com/search/keyword/4/0_{word}' for word in search_words ]
-    start_urls = ["http://www.dianping.com/shijiazhuang/ch50/g123"]
-    
+    #start_urls = [f"http://www.dianping.com/{city}/ch50/g123" for city in citys]
+    start_urls = ["http://www.dianping.com/Yuncheng/ch50/g123"]
+
     def verify_url(self, status):
          self.crawler.engine.close_spider(self, 'url change, stop crawl!')
 
@@ -49,8 +51,9 @@ class DianpingSpider(scrapy.Spider):
         page = response.xpath('//div[@class="page"]/a[@class="cur"]/text()').get()     #当前页码数
         next_page_url =  response.xpath('//div[@class="page"]/a[last()]/@href').get()    #下一页url             
 
-        print('正在爬取第',page,'页店铺')
-        for url in shop_urls:            
+        
+        for url in shop_urls:
+            print('正在爬取',url,'店铺信息')
             yield scrapy.Request(url=url, cookies = None, callback=self.shop_parse)
         
         if next_page_url:            
@@ -59,7 +62,7 @@ class DianpingSpider(scrapy.Spider):
 
     def shop_parse(self,response):
 
-        print('正在爬取',response.url,'店铺信息')
+        
         title = response.xpath('//div[@id="basic-info"]/h1[@class="shop-name"]/text()').get()   #标题
         
         if title:

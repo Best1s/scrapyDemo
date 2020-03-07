@@ -21,6 +21,9 @@ class UseHandAddCookiesDownloaderMiddleware(object):
     def process_reponse(self, request, spider):
 
         if response.url.split("/")[2] == "verify.meituan.com" or response.status == 403:
+            print("this is 403!!!!"*3)
+            self.cookies_status = False
+            self.request.cookies = {}
             self.crawler.engine.close_spider(self, 'url change is' + response.url + 'stop crawl!')
         return response
 

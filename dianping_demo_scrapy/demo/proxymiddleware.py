@@ -16,15 +16,14 @@ class ProxyMiddleWare(object):
             proxy = self.p.get_proxy()
             request.meta["proxy"] = proxy
             self.lock.release()
-        elif "proxy" in request.meta:
-            self.proxy_status = True
-            del request.meta["proxy"]
-
-            
+        #elif "proxy" in request.meta:
+        #    self.proxy_status = True
+        #    del request.meta["proxy"]
     def process_reponse(self, request, response, spider):
         try_count = 2
-        if response.url.split("/")[3] == "shop" or response.status == 403:
+        if response.status == 403 or "meituan" in response.url:            
             self.lock.acquire()
+            print("this is 403 status!!"*5)
             del request.meta["proxy"]
             self.proxy_status = True
             self.lock.release()
