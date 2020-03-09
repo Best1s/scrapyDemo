@@ -16,30 +16,31 @@ class JdSpider(scrapy.Spider):
         self.browser = webdriver.Chrome(self.driver_path)
         self.browser.implicitly_wait(10)  # 隐性等待，最长等10秒
         self.browser.set_window_size(700, 1000)
-
-    def start_requests(self):
-        root_url = "https://z.jd.com/bigger/search.html"        
-        self.browser.get(root_url)
+        self.root_url = "https://z.jd.com/bigger/search.html" 
+        self.zc_urls = []
+    def start_requests(self):      
+        self.browser.get(self.root_url)
         time.sleep(3)
-        zc_urls = []
         for i in range(2,10):
-            try:
                 self.browser.find_element_by_xpath(f"//ul[@class='l-list clearfix fl']/li[@class='fl'][{i}]/a[@id='parentId']").click()
                 time.sleep(3)
-            except(e):
-                print(e)            
-            while True:
-                html = etree.HTML(self.browser.page_source)
-                print("next url is :")
-                print(html.xpath("//div[@class='pagesbox']/div[@id='page_div']/a[@class='next']/text()"))
-                zc_urls = zc_urls + html.xpath("//div[@class='l-result']/ul[@class='infos clearfix']/li[@class='info type_now']/a/@href")
-                if html.xpath("//div[@class='pagesbox']/div[@id='page_div']/a[@class='next']/text()"):
-                    self.browser.find_element_by_xpath("//div[@class='pagesbox']/div[@id='page_div']/a[@class='next']").click()
-                    time.sleep(3)
-                else:
-                    break
-        for url in zc_urls:
-            yield scrapy.Request(url="http://z.jd.com" + url, callback=self.parse)
+                while True:
+                    html = etree.HTML(self.browser.page_source)
+                    self.zc_urls = html.xpath("//div[@class='l-result']/ul[@class='infos clearfix']/li[@class='info type_now']/a/@href")
+                    print(self.zc_urls)
+                    for url in self.zc_urls:
+                        yield scrapy.Request(url="http://z.jd.com" + url, callback=self.parse)
+                    if html.xpath("//div[@class='pagesbox']/div[@id='page_div']/a[@class='next']/text()"):
+                        try:
+                            self.browser.find_element_by_xpath("//div[@class='pagesbox']/div[@id='page_div']/a[@class='next']").click()
+                            time.sleep(3)
+                        except(e):
+                            print(e)
+                    else:
+                        break
+                    
+                    
+
 
     def parse(self, response):
         url = response.url
