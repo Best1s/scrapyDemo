@@ -18,17 +18,16 @@ class GetUrls(object):
         self.browser.get(url)
         time.sleep(3)
         for i in range(2,10):
-            self.browser.find_element_by_xpath("//ul[@class='l-list clearfix fl']/li[@class='fl'][2]/a[@id='parentId']").click()
+            self.browser.find_element_by_xpath(f"//ul[@class='l-list clearfix fl']/li[@class='fl'][{i}]/a[@id='parentId']").click()
             time.sleep(3)
             html = etree.HTML(self.browser.page_source)
-            while True:                                    
+            while True:
+                zc_urls = html.xpath('//div[@class="i-tits  no-color-choose"]/a/@href')
+                for url in zc_urls:
+                    print(url)
+                    self.writer.writerow([url])
                 if html.xpath("//div[@class='pagesbox']/div[@id='page_div']/a[@class='next']/text()"):
                     try:
-                        #zc_urls = html.xpath("//div[@class='l-result']/ul[@class='infos clearfix']/li[@class='info type_now']/a/@href")
-                        zc_urls = html.xpath('//div[@class="i-tits  no-color-choose"]/a/@href')
-                        for url in zc_urls:
-                            print(url)
-                            self.writer.writerow([url])
                         self.browser.find_element_by_xpath("//div[@class='pagesbox']/div[@id='page_div']/a[@class='next']").click()
                         html = etree.HTML(self.browser.page_source)
                         print("this try click")
