@@ -33,8 +33,8 @@ class JdSpider(scrapy.Spider):
                     if html.xpath("//div[@class='pagesbox']/div[@id='page_div']/a[@class='next']/text()"):
                         try:
                             self.browser.find_element_by_xpath("//div[@class='pagesbox']/div[@id='page_div']/a[@class='next']").click()
-                            time.sleep(3)
-                        except(e):
+                            time.sleep(5)
+                        except Exception as e:
                             print(e)
                     else:
                         break
