@@ -11,7 +11,7 @@ import scrapy
 class ZJdItem(scrapy.Item):
     # define the fields for your item here like:
     # name = scrapy.Field()
-    company_url = scrapy.Field()
+    url = scrapy.Field()
     company_name = scrapy.Field()
     address = scrapy.Field()
     tel = scrapy.Field()
