@@ -10,7 +10,8 @@ class DianpingSpider(scrapy.Spider):
     citys = ['fixin','liaoyang','panjin','tieling','chaoyang','huludao']
     #start_urls = [f'http://www.dianping.com/search/keyword/4/0_{word}' for word in search_words ]
     #start_urls = [f"http://www.dianping.com/{city}/ch50/g123" for city in citys]
-    start_urls = ["http://www.dianping.com/Yuncheng/ch50/g123"]
+    #山东  jining  未爬
+    start_urls = ["http://www.dianping.com/weifang/ch50/g123"]
 
     def verify_url(self, status):
          self.crawler.engine.close_spider(self, 'url change, stop crawl!')
@@ -71,7 +72,10 @@ class DianpingSpider(scrapy.Spider):
         region = response.xpath('//div[@id="basic-info"]/div[@class="expand-info address"]/a/span/text()').get()
                              
         if region:
-            address = "地址:" + region + response.xpath("//div[@class='expand-info address']/span/@title").get()   #格式：区加具体地址
+            try:
+                address = "地址:" + region + response.xpath("//div[@class='expand-info address']/span/@title").get()   #格式：区加具体地址
+            except Exception:
+                address = None
         else:            
             address = None
 
