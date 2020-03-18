@@ -10,8 +10,8 @@ class DianpingSpider(scrapy.Spider):
     citys = ['fixin','liaoyang','panjin','tieling','chaoyang','huludao']
     #start_urls = [f'http://www.dianping.com/search/keyword/4/0_{word}' for word in search_words ]
     #start_urls = [f"http://www.dianping.com/{city}/ch50/g123" for city in citys]
-    #山东  jining  未爬
-    start_urls = ["http://www.dianping.com/weifang/ch50/g123"]
+    classfiys = ['g158','g2572','g159']
+    start_urls = [f"http://www.dianping.com/weifang/ch50/{classfiy}" for classfiy in classfiys]
 
     def verify_url(self, status):
          self.crawler.engine.close_spider(self, 'url change, stop crawl!')
@@ -49,41 +49,13 @@ class DianpingSpider(scrapy.Spider):
         #self.verify_url(url=response.url.split("/")[2])
 
         shop_urls = response.xpath('//div[@class="pic"]/a/@href').getall()  #店铺URL合集
-        page = response.xpath('//div[@class="page"]/a[@class="cur"]/text()').get()     #当前页码数
+        #page = response.xpath('//div[@class="page"]/a[@class="cur"]/text()').get()     #当前页码数
         next_page_url =  response.xpath('//div[@class="page"]/a[last()]/@href').get()    #下一页url             
 
-        
-        for url in shop_urls:
-            print('正在爬取',url,'店铺信息')
-            yield scrapy.Request(url=url, cookies = None, callback=self.shop_parse)
+        yield DemoItem(url=shop_urls)
         
         if next_page_url:            
             yield scrapy.Request(url=next_page_url, callback=self.shop_list_parse)
 
 
-    def shop_parse(self,response):
-
-        
-        title = response.xpath('//div[@id="basic-info"]/h1[@class="shop-name"]/text()').get()   #标题
-        
-        if title:
-            title = title.strip()
-
-        region = response.xpath('//div[@id="basic-info"]/div[@class="expand-info address"]/a/span/text()').get()
-                             
-        if region:
-            try:
-                address = "地址:" + region + response.xpath("//div[@class='expand-info address']/span/@title").get()   #格式：区加具体地址
-            except Exception:
-                address = None
-        else:            
-            address = None
-
-        tel = response.xpath('//div[@id="basic-info"]/p[@class="expand-info tel"]/span[@itemprop="tel"]/text()').getall()   #电话
-        url =  response.request.url     #店铺url
-
-        print("*"*40 + "获取到数据" + '*'*29)
-
-        item = DemoItem(title=title, tel=tel, address=address, url=url)
-        yield item
                 

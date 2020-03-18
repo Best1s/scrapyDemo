@@ -73,6 +73,7 @@ DOWNLOADER_MIDDLEWARES = {
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
     'demo.pipelines.DemoPipeline': 300,
+    #'demo.pipelines.ShopPipeline': 300,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -102,4 +103,4 @@ JOBDIR='dianping.com'
 DOWNLOAD_TIMEOUT = 5
 
 #防止403崩溃
-HTTPERROR_ALLOWED_CODES = [302,403]
+#HTTPERROR_ALLOWED_CODES = [302,403]

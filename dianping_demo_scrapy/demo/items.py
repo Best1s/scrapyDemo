@@ -8,10 +8,13 @@
 import scrapy
 
 
-class DemoItem(scrapy.Item):
+class ShopItem(scrapy.Item):
     # define the fields for your item here like:
      title = scrapy.Field()
      tel = scrapy.Field()
      address = scrapy.Field()
+     url = scrapy.Field()
+
+class DemoItem(scrapy.Item):
      url = scrapy.Field()
     
