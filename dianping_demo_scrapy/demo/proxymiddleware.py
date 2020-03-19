@@ -21,7 +21,7 @@ class ProxyMiddleWare(object):
         #    del request.meta["proxy"]
     def process_reponse(self, request, response, spider):
         try_count = 2
-        if response.status == 403 or "meituan" in response.url:            
+        if response.status == 403 or "meituan" in response.url or response.status == 302:            
             self.lock.acquire()
             print("this is 403 status!!"*5)
             del request.meta["proxy"]

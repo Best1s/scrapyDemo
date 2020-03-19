@@ -28,13 +28,13 @@ CONCURRENT_REQUESTS = 20
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
-#DOWNLOAD_DELAY = 1
+#DOWNLOAD_DELAY = 3
 # The download delay setting will honor only one of:
 #CONCURRENT_REQUESTS_PER_DOMAIN = 16
 #CONCURRENT_REQUESTS_PER_IP = 16
 
 # Disable cookies (enabled by default)
-COOKIES_ENABLED = True
+COOKIES_ENABLED = False
 
 # Disable Telnet Console (enabled by default)
 #TELNETCONSOLE_ENABLED = False
@@ -72,8 +72,10 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'demo.pipelines.DemoPipeline': 300,
-    #'demo.pipelines.ShopPipeline': 300,
+    #'demo.pipelines.DemoPipeline': 300,
+    'demo.pipelines.ShopPipeline': 320,
+    # Store scraped item in redis for post-processing. 分布式redispipeline
+    'scrapy_redis.pipelines.RedisPipeline': 300,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -104,3 +106,12 @@ DOWNLOAD_TIMEOUT = 5
 
 #防止403崩溃
 #HTTPERROR_ALLOWED_CODES = [302,403]
+
+
+""" scrapy-redis配置 """
+# Enables scheduling storing requests queue in redis.
+SCHEDULER = "scrapy_redis.scheduler.Scheduler"
+# Ensure all spiders share same duplicates filter through redis.
+DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
+
+REDIS_URL = 'redis://user:KuaiYu*$%A@Tu@10.0.0.231:6379'

@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
 import scrapy
 from ..items import  ShopItem
+from redis import StrictRedis, ConnectionPool
+import time
+from scrapy_redis.spiders import RedisSpider
 
-class ShopParseSpider(scrapy.Spider):
+class ShopParseSpider(RedisSpider):
     name = 'shop_parse'
-    allowed_domains = ['www.dianping.com']
-    start_urls = ['http://www.dianping.com/']
+    allowd_domains = ["www.dianping.com"]
+    redis_key = 'dianping:start_urls'
+
+
 
     def parse(self, response):
         title = response.xpath('//div[@id="basic-info"]/h1[@class="shop-name"]/text()').get()   #标题
