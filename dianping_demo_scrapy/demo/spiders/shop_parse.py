@@ -2,14 +2,32 @@
 import scrapy
 from ..items import  ShopItem
 from redis import StrictRedis, ConnectionPool
-import time
+import datetime
 from scrapy_redis.spiders import RedisSpider
 
 class ShopParseSpider(RedisSpider):
     name = 'shop_parse'
-    allowd_domains = ["www.dianping.com"]
     redis_key = 'dianping:start_urls'
-
+    #定义这个Spider所特有的Settings
+    
+    to_day = datetime.datetime.now()
+    log_file_path = 'log/scrapy_{}_{}_{}.log'.format(to_day.year, to_day.month, to_day.day)
+    
+    custom_settings = {
+        'ITEM_PIPELINES' : {
+        'demo.pipelines.ShopPipeline': 320,
+        # Store scraped item in redis for post-processing. 分布式redispipeline
+        'scrapy_redis.pipelines.RedisPipeline': 300,
+        },
+        'DOWNLOADER_MIDDLEWARES' : {
+        'demo.uamiddleware.UaDownloaderMiddleware': 544,
+        'demo.proxymiddleware.ProxyMiddleWare': 570,
+        },
+        'COOKIES_ENABLED' : True,
+        'JOBDIR' : 'slave_jobs_dir',
+        'LOG_LEVEL' : 'DEBUG',
+        #'LOG_FILE' : log_file_path,
+    }
 
 
     def parse(self, response):
