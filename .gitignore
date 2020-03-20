@@ -3,3 +3,4 @@
 *.log
 .venv
 .vs
+dianping_demo_scrapy/**/settings.py
