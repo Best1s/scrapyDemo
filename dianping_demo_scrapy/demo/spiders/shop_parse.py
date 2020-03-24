@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 import scrapy
 from ..items import  ShopItem
-from redis import StrictRedis, ConnectionPool
 import datetime
 from scrapy_redis.spiders import RedisSpider
-
+from redis import StrictRedis, ConnectionPool
+import demo.settings as settings
 class ShopParseSpider(RedisSpider):
     name = 'shop_parse'
     redis_key = 'dianping:start_urls'
@@ -21,15 +21,22 @@ class ShopParseSpider(RedisSpider):
         },
         'DOWNLOADER_MIDDLEWARES' : {
         'demo.uamiddleware.UaDownloaderMiddleware': 544,
-        'demo.proxymiddleware.ProxyMiddleWare': 570,
+        #'demo.proxymiddleware.ProxyMiddleWare': 570,
+        'demo.slaveproxymiddleware2.ProxyMiddleWare': 570,
         },
         'COOKIES_ENABLED' : True,
         'JOBDIR' : 'slave_jobs_dir',
         'LOG_LEVEL' : 'DEBUG',
+        'CONCURRENT_REQUESTS' : 50,
         #'LOG_FILE' : log_file_path,
     }
 
-
+    def __init__(self, *args, **kwargs):
+        host = settings.REDIS_HOST
+        port = settings.REDIS_PORT
+        password = settings.REDIS_PASSWORD
+        self.pool = ConnectionPool(host=host, port=port,  password=password)
+        self.redis = StrictRedis(connection_pool=self.pool)
     def parse(self, response):
         title = response.xpath('//div[@id="basic-info"]/h1[@class="shop-name"]/text()').get()   #标题
         
@@ -52,4 +59,8 @@ class ShopParseSpider(RedisSpider):
         print("*"*40 + "获取到数据" + '*'*29)
 
         item = ShopItem(title=title, tel=tel, address=address, url=url)
-        yield item
+        if response.status in [200]:
+            self.redis.sadd("set_shop_url",url)
+            yield item
+        else:
+            pass

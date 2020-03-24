@@ -12,7 +12,7 @@ class DianpingSpider(scrapy.Spider):
     #start_urls = [f"http://www.dianping.com/{city}/ch50/g123" for city in citys]
     classfiys = ['g158','g2572','g159']
     #city = "haerbin"
-    start_urls = [f"http://www.dianping.com/haerbin/ch50/{classfiy}" for classfiy in classfiys]
+    start_urls = [f"http://www.dianping.com/mudanjiang/ch50/{classfiy}" for classfiy in classfiys]
 
     def verify_url(self, status):
          self.crawler.engine.close_spider(self, 'url change, stop crawl!')

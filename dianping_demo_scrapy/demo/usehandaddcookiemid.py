@@ -1,6 +1,6 @@
 import random
 from demo.cookiespool import COOKIES as ckpool
-
+import time
 class UseHandAddCookiesDownloaderMiddleware(object):
     def __init__(self):        
         self.cookies_status = False
@@ -18,13 +18,14 @@ class UseHandAddCookiesDownloaderMiddleware(object):
             request.cookies = cookies
         return None
 
-    def process_reponse(self, request, spider):
+    def process_response(self, response,request, spider):
 
         if response.url.split("/")[2] == "verify.meituan.com" or response.status == 403:
-            print("this is 403!!!!"*3)
-            self.cookies_status = False
-            self.request.cookies = {}
-            self.crawler.engine.close_spider(self, 'url change is' + response.url + 'stop crawl!')
+            time.sleep(5)
+            #print("this is 403!!!!"*3)
+            #self.cookies_status = False
+            #self.request.cookies = {}
+            #self.crawler.engine.close_spider(self, 'url change is' + response.url + 'stop crawl!')
         return response
 
 

@@ -1,3 +1,3 @@
 COOKIES = [
-    "cy=79; cityid=79; cye=haerbin; cy=79; cye=haerbin; _lxsdk_cuid=170f5c1c0e8c8-09214cf406c4c5-3a36560a-1fa400-170f5c1c0e8c8; _lxsdk=170f5c1c0e8c8-09214cf406c4c5-3a36560a-1fa400-170f5c1c0e8c8; _hc.v=8381c199-53b2-a0ae-36cc-2df8889e4896.1584671081; s_ViewType=10; _lxsdk_s=170f5c1c0e9-2e0-d11-db%7C%7C69"
+    "cy=88; cityid=88; cye=mudanjiang; _lxsdk_cuid=1710a42a00fc8-05641c84cae2b1-3a36560a-1fa400-1710a42a00fc8; _lxsdk=1710a42a00fc8-05641c84cae2b1-3a36560a-1fa400-1710a42a00fc8; _hc.v=7f5c9813-f1e8-5aa0-16ef-a4004303b20c.1585015071; s_ViewType=10; _lxsdk_s=1710a7a834b-822-fb7-ccc%7C%7C212"
     ]
