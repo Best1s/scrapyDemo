@@ -11,7 +11,7 @@ class UseHandAddCookiesDownloaderMiddleware(object):
         return cookies
 
     def process_request(self, request, spider):
-
+        #request.meta["proxy"] = "http://xxxx:3128"
         if not request.cookies or not self.cookies_status:
             self.cookies_status = True
             cookies = self.get_cookies()

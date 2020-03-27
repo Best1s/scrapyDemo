@@ -19,10 +19,10 @@ class Proxy(object):
         self.status=True
         return exit
         
-    def get_proxy(self,spider):
-        def close_spider(spider):
-            print("this is close_spider")
-            spider.crawler.engine.close_spider(spider, '没有代理IP关闭爬虫')
+    def get_proxy(self):
+    #    def close_spider(spider):
+    #        print("this is close_spider")
+    #        spider.crawler.engine.close_spider(spider, '没有代理IP关闭爬虫')
         while True:
             try:
                 ip = requests.get(self.url + "get/", headers = self.headers).json().get("proxy")

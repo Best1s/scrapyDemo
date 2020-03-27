@@ -8,5 +8,5 @@ image_stop_id=`docker ps|awk '/scrapy:dianping/{print $1}'`
 docker build -t scrapy:dianping .
 if [ $? == 0 ];then
 	echo "build successful,begin run new image"
-	docker run scrapy:dianping
+	docker run --name scrapy_dianping--restart=always scrapy:dianping
 fi

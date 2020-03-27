@@ -26,7 +26,7 @@ class Proxy(object):
                 if r.status_code == 200:
                     break
                     #self.lock.release()
-        #print("proxy ip is : http://" + ip)                    
+        #print("proxy ip is : http://" + ip)                requests.get("http://httpbin.org/ip",proxies={"http":"http://proxy:proxy123!@47.52.237.113:3128"}).json()    
         return ip
 
 

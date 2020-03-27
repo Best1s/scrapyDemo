@@ -1,6 +1,6 @@
-FROM python/scrapy
-COPY ["dianping_demo_scrapy/","/"]
+FROM python
+MAINTAINER best.oneself@foxmail.com
+COPY ["dianping_demo_scrapy/","/dianping_demo_scrapy"]
 WORKDIR /dianping_demo_scrapy
-CMD  scrapy crawl shop_parse |tee scrapy.log 
-
-
+RUN pip  install  -r requirements.txt -i https://pypi.douban.com/simple
+CMD scrapy crawl shop_parse |tee scrapy.log

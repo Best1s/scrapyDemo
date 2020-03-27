@@ -23,8 +23,9 @@ class DemoPipeline(object):
 
     def process_item(self, item, spider):     #当item传值过来时会被调用。
         for url in item['url']:
-            if not self.redis.sismember("set_shop_url",url):                
+            if not self.redis.sismember("set_shop_url",url) and not self.redis.sismember("lpushed_shop_url",url):                
                 self.redis.lpush("dianping:start_urls",url)
+                self.redis.sadd("lpushed_shop_url",url)
             else:
                 continue
         print("url添加成功")
@@ -34,7 +35,7 @@ class DemoPipeline(object):
         print('结束爬虫'*5)
         print("剩余商店爬虫数据：",self.redis.llen("dianping:start_urls"))
         print("总共爬取商店数据：",self.redis.scard("set_shop_url"))
-        print("403URL数据：",self.redis.scard("403_shop_url"))
+        print("lpush数据：",self.redis.scard("lpushed_shop_url"))
 
 class ShopPipeline(object):
     def __init__(self):         #爬虫被打开时执行 同open_spider

@@ -21,13 +21,16 @@ class ShopParseSpider(RedisSpider):
         },
         'DOWNLOADER_MIDDLEWARES' : {
         'demo.uamiddleware.UaDownloaderMiddleware': 544,
-        #'demo.proxymiddleware.ProxyMiddleWare': 570,
-        'demo.slaveproxymiddleware2.ProxyMiddleWare': 570,
+        'demo.slaveproxymiddleware .ProxyMiddleWare': 570,
         },
-        'COOKIES_ENABLED' : True,
+        'COOKIES_ENABLED' : False,
         'JOBDIR' : 'slave_jobs_dir',
         'LOG_LEVEL' : 'DEBUG',
-        'CONCURRENT_REQUESTS' : 50,
+        'CONCURRENT_REQUESTS' : 20,
+        # Enables scheduling storing requests queue in redis.
+        'SCHEDULER' : "scrapy_redis.scheduler.Scheduler",
+        # Ensure all spiders share same duplicates filter through redis.
+        'DUPEFILTER_CLASS' : "scrapy_redis.dupefilter.RFPDupeFilter",
         #'LOG_FILE' : log_file_path,
     }
 
@@ -44,12 +47,12 @@ class ShopParseSpider(RedisSpider):
             title = title.strip()
 
         region = response.xpath('//div[@id="basic-info"]/div[@class="expand-info address"]/a/span/text()').get()
-                             
-        if region:
+        address = response.xpath("//div[@class='expand-info address']/span/@title").get()   #格式：区加具体地址                     
+        if region or address:
             try:
-                address = "地址:" + region + response.xpath("//div[@class='expand-info address']/span/@title").get()   #格式：区加具体地址
+                address = "地址:" + region + address
             except Exception:
-                address = None
+                address = 1
         else:            
             address = None
 
@@ -59,8 +62,8 @@ class ShopParseSpider(RedisSpider):
         print("*"*40 + "获取到数据" + '*'*29)
 
         item = ShopItem(title=title, tel=tel, address=address, url=url)
-        if response.status in [200]:
+        if response.status in [200] and address:
             self.redis.sadd("set_shop_url",url)
             yield item
         else:
-            pass
+            self.redis.lpush("dianping:start_urls",url)
