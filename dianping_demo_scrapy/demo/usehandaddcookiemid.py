@@ -11,7 +11,7 @@ class UseHandAddCookiesDownloaderMiddleware(object):
         return cookies
 
     def process_request(self, request, spider):
-        #request.meta["proxy"] = "http://xxxx:3128"
+        #request.meta["proxy"] = "http://47.107.231.169:3128"
         if not request.cookies or not self.cookies_status:
             self.cookies_status = True
             cookies = self.get_cookies()
@@ -22,9 +22,6 @@ class UseHandAddCookiesDownloaderMiddleware(object):
 
         if response.url.split("/")[2] == "verify.meituan.com" or response.status == 403:
             time.sleep(5)
-            #print("this is 403!!!!"*3)
-            #self.cookies_status = False
-            #self.request.cookies = {}
             #self.crawler.engine.close_spider(self, 'url change is' + response.url + 'stop crawl!')
         return response
 

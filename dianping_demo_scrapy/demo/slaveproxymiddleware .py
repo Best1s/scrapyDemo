@@ -2,7 +2,6 @@ from demo.slaveproxymodel import Proxy
 from twisted.internet.defer import DeferredLock
 import demo.settings as settings
 import time
-from twisted.internet.error import TimeoutError
 import base64
 class ProxyMiddleWare(object):
     def __init__(self):
@@ -37,8 +36,6 @@ class ProxyMiddleWare(object):
                 return response
             return request
         return response
-    def process_exception(self, request, exception, spider):
-        if isinstance(exception,TimeoutError):
-            return request
+
 
 
