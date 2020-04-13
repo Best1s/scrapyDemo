@@ -53,7 +53,7 @@ class Push(threading.Thread):
             if i+1 == t_num:
                 end = len(self.urls)-1
             t = threading.Thread(target=self.push_url, args=(start, end))
-        ts.append(t)
+            ts.append(t)
         for t in ts:
             t.start()
         for i in ts:
