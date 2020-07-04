@@ -10,10 +10,8 @@ import csv
 class Shipin11467ComScrapyPipeline(object):
 
     def __init__(self):         #爬虫被打开时执行 同open_spider
-        print('开始爬虫'*5)
-        #fileName = 'zjd.csv'
-        #fileName = 'zsn.csv'
-        fileName = 'qiye.csv'
+        print('开始爬虫'*5)       
+        fileName = '11467food.csv'
         self.file = open(fileName, 'a+', newline='')        
         self.writer = csv.writer(self.file,dialect='excel')                
 
@@ -21,9 +19,9 @@ class Shipin11467ComScrapyPipeline(object):
         pass
 
     def process_item(self, item, spider):     #当item传值过来时会被调用。
-        # self.writer.writerow([item['company_name'],item['tel'],item['address'],item['url']]) #z.jd csv
-        #self.writer.writerow([item['company_name'],item['tel'],item['url']]) #z.jd csv
-        self.writer.writerow([item['company_name'], item['tel'], item['user'], item['url']]) #qiye csv
+        # title=title, url=url, company_name=company_name, address=address, name=name,tel=tel, phone=phone
+        
+        self.writer.writerow([item['title'], item['name'], item['company_name'], item['tel'], item['phone'], item['address'], item['url']])
         return item
     def close_spider(self, spider):  #爬虫关闭时调用
         print('结束爬虫'*5)
