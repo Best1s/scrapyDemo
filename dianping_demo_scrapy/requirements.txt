@@ -1,4 +1,4 @@
-redis==3.4.1
+redis==4.5.3
 redispy==3.0.0
 requests==2.22.0
 Scrapy==1.8.0
